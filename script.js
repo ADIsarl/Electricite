@@ -1,4 +1,4 @@
-// --- VARIABLES GLOBALES ---
+// --- CONFIGURATION ---
 let isTriphasé = false;
 let currentMeasure = null;
 
@@ -9,29 +9,26 @@ const rInput = document.getElementById('r-val');
 const pInput = document.getElementById('p-val');
 const cableOutput = document.getElementById('cable-result');
 const phaseToggle = document.getElementById('phase-toggle');
-
 const inputs = [uInput, iInput, rInput, pInput];
 
 // --- INIT ---
 phaseToggle.addEventListener('change', () => {
     isTriphasé = phaseToggle.checked;
-    // Remet U par défaut si vide ou standard
     if (!uInput.value || uInput.value == 230 || uInput.value == 400) {
         uInput.value = isTriphasé ? 400 : 230;
     }
-    // Relance le calcul si possible
+    // Relance le calcul
     if (iInput.value) calculate('i-val');
     else if (rInput.value) calculate('r-val');
 });
 
-// Valeur par défaut
 uInput.value = 230; 
 
-// --- CALCULATEUR INTELLIGENT ---
 inputs.forEach(input => {
     input.addEventListener('input', (e) => calculate(e.target.id));
 });
 
+// --- CALCULATEUR ---
 function calculate(sourceId) {
     let u = parseFloat(uInput.value);
     let i = parseFloat(iInput.value);
@@ -39,36 +36,27 @@ function calculate(sourceId) {
     let p = parseFloat(pInput.value);
     const rac3 = 1.732;
 
-    // SCÉNARIO 1 : Entrée de RÉSISTANCE (R)
-    // Comme U est fixe, on calcule I = U / R, puis P
+    // Calcul basé sur Résistance
     if (sourceId === 'r-val' && r && u) {
         i = u / r;
         iInput.value = i.toFixed(2);
-        
         if (isTriphasé) pInput.value = (u * i * rac3).toFixed(2);
         else pInput.value = (u * i).toFixed(2);
-    }
-
-    // SCÉNARIO 2 : Entrée d'INTENSITÉ (I) ou TENSION (U)
-    // On calcule P et R
+    } 
+    // Calcul basé sur Intensité ou Tension
     else if ((sourceId === 'i-val' || sourceId === 'u-val') && u && i) {
         if (isTriphasé) pInput.value = (u * i * rac3).toFixed(2);
         else pInput.value = (u * i).toFixed(2);
-        
         rInput.value = (u / i).toFixed(2);
-    }
-
-    // SCÉNARIO 3 : Entrée de PUISSANCE (P)
-    // On calcule I puis R
+    } 
+    // Calcul basé sur Puissance
     else if (sourceId === 'p-val' && p && u) {
         if (isTriphasé) i = p / (u * rac3);
         else i = p / u;
-        
         iInput.value = i.toFixed(2);
         rInput.value = (u / i).toFixed(2);
     }
 
-    // Mise à jour de la section de câble si on a une Intensité (I)
     let finalI = parseFloat(iInput.value);
     if(finalI) updateCableSection(finalI);
     else cableOutput.innerText = "---";
@@ -76,10 +64,11 @@ function calculate(sourceId) {
 
 function updateCableSection(amp) {
     let section = "---";
-    // Valeurs approximatives standards domestiques (Disjoncteur max -> Section)
+    // Normes standard domestique (Approximation)
     if (amp <= 10) section = "1.5 mm²";
-    else if (amp <= 16) section = "1.5 mm² (ou 2.5)";
+    else if (amp <= 16) section = "1.5 mm² / 2.5 mm²";
     else if (amp <= 20) section = "2.5 mm²";
+    else if (amp <= 25) section = "4 mm²"; // Ajout du 4²
     else if (amp <= 32) section = "6 mm²";
     else if (amp <= 40) section = "10 mm²";
     else if (amp <= 63) section = "16 mm²";
@@ -96,66 +85,106 @@ function resetCalculator() {
 
 // --- NAVIGATION ---
 function showSection(id) {
-    // Cache tout
     document.querySelectorAll('main > section').forEach(sec => {
         sec.classList.remove('active-section');
         sec.classList.add('hidden-section');
     });
-    // Reset boutons
-    document.querySelectorAll('nav button').forEach(btn => {
-        btn.classList.remove('active-btn');
-    });
+    document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active-btn'));
 
-    // Active la cible
     document.getElementById(id).classList.remove('hidden-section');
     document.getElementById(id).classList.add('active-section');
 
-    // Active le bouton
     if(id === 'calculator') document.getElementById('btn-calc').classList.add('active-btn');
     else if(id === 'guide') document.getElementById('btn-guide').classList.add('active-btn');
     else if(id === 'formulas') document.getElementById('btn-form').classList.add('active-btn');
 }
 
-// --- MULTIMÈTRE ---
+// --- GUIDE MULTIMÈTRE ---
 const positions = {
-    red: {
-        tension: { top: 85, left: 70 },     
-        resistance: { top: 85, left: 30 }, 
-        intensite: { top: 25, left: 25 }   
-    },
-    yellow: {
-        tension: { top: 75, left: 22 },     
-        resistance: { top: 48, left: 12 },  
-        intensite: { top: 12, left: 50 }   
-    }
+    red: { tension: { top: 85, left: 70 }, resistance: { top: 85, left: 30 }, intensite: { top: 25, left: 25 } },
+    yellow: { tension: { top: 75, left: 22 }, resistance: { top: 48, left: 12 }, intensite: { top: 12, left: 50 } }
 };
-
-const images = {
-    red: 'assets/red_multimeter.png',
-    yellow: 'assets/yellow_multimeter.png'
-};
+const images = { red: 'assets/red_multimeter.png', yellow: 'assets/yellow_multimeter.png' };
 
 const explanations = {
-    tension: "La tension (Volts) est la 'pression' du courant. Elle permet de vérifier si une prise fonctionne (230V) ou si un fusible est grillé (0V aux bornes).",
-    intensite: "L'intensité (Ampères) est le débit du courant. Elle sert à vérifier la consommation d'un appareil (ex: chauffage) ou équilibrer les phases.",
-    resistance: "La résistance (Ohms) teste la continuité. Utile pour savoir si un fil est coupé, une bobine moteur est bonne, ou tester une résistance de chauffe-eau."
+    tension: "Vérification de présence de tension. 230V entre Phase/Neutre. 400V entre Phases.",
+    intensite: "Mesure du débit de courant (Ampérage). Toujours avec la pince autour d'UN SEUL fil.",
+    resistance: "Test de continuité (Bip) ou valeur ohmique. Toujours HORS TENSION."
+};
+
+// Liste des composants pour le menu déroulant
+const componentOptions = {
+    tension: [
+        {val: 'prise', label: 'Prise de courant'},
+        {val: 'moteur', label: 'Moteur / Bornier'},
+        {val: 'contact', label: 'Contacteur / Disjoncteur'}
+    ],
+    resistance: [
+        {val: 'contact', label: 'Contact sec / Thermostat'},
+        {val: 'moteur', label: 'Enroulement Moteur'},
+        {val: 'resistance', label: 'Résistance de chauffe'}
+    ],
+    intensite: [
+        {val: 'moteur', label: 'Moteur'},
+        {val: 'tableau', label: 'Départ Tableau'}
+    ]
 };
 
 function selectMeasurement(type) {
     currentMeasure = type;
     document.getElementById('guide-display').classList.remove('hidden-section');
     document.getElementById('guide-display').classList.add('active-section');
-    
-    // Reset info panel
     document.getElementById('measure-info').classList.add('hidden');
+    document.getElementById('help-gallery').innerHTML = ""; // Vide galerie
     
     updateGuideContent();
+    updateComponentSelector();
     updateMultimeterView();
 }
 
+function updateComponentSelector() {
+    const selectorArea = document.getElementById('component-selector-area');
+    const select = document.getElementById('component-select');
+    select.innerHTML = "<option value=''>-- Choisir un élément --</option>";
+
+    const opts = componentOptions[currentMeasure];
+    if (opts) {
+        selectorArea.classList.remove('hidden-section');
+        opts.forEach(opt => {
+            let option = document.createElement("option");
+            option.value = opt.val;
+            option.innerText = opt.label;
+            select.appendChild(option);
+        });
+    } else {
+        selectorArea.classList.add('hidden-section');
+    }
+}
+
+// --- SYSTÈME AUTOMATIQUE D'IMAGES ---
+function showComponentImages() {
+    const comp = document.getElementById('component-select').value;
+    const gallery = document.getElementById('help-gallery');
+    gallery.innerHTML = ""; 
+
+    if (!comp) return;
+
+    // Tente de charger les images de 1 à 6
+    for (let i = 1; i <= 6; i++) {
+        // Nom attendu : tension_prise_1.jpg
+        let imageName = `${currentMeasure}_${comp}_${i}.jpg`;
+        let imagePath = `assets/${imageName}`;
+
+        let div = document.createElement('div');
+        // Si l'image n'existe pas, onerror la supprime du HTML
+        div.innerHTML = `<img src="${imagePath}" class="gallery-img" alt="Aide ${i}" onerror="this.remove()">`;
+        
+        gallery.appendChild(div);
+    }
+}
+
 function toggleInfo() {
-    const panel = document.getElementById('measure-info');
-    panel.classList.toggle('hidden');
+    document.getElementById('measure-info').classList.toggle('hidden');
 }
 
 function updateGuideContent() {
@@ -164,26 +193,23 @@ function updateGuideContent() {
     const desc = document.getElementById('measure-desc');
     const infoText = document.getElementById('info-text');
 
-    // Texte explicatif bouton "?"
-    if (explanations[currentMeasure]) {
-        infoText.innerText = explanations[currentMeasure];
-    }
+    if (explanations[currentMeasure]) infoText.innerText = explanations[currentMeasure];
 
     if (currentMeasure === 'tension') {
-        title.innerText = "Mesure de Tension (Volt)";
-        warning.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ATTENTION : Mesure SOUS TENSION !";
+        title.innerText = "Tension (Volt)";
+        warning.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ATTENTION : SOUS TENSION !";
         warning.className = "warning-box bg-danger";
-        desc.innerText = "Branchez en dérivation (parallèle). Calibre V~ (Alternatif) supérieur à 230V.";
+        desc.innerText = "Branchez en parallèle. Calibre V~ > 230V.";
     } else if (currentMeasure === 'intensite') {
-        title.innerText = "Mesure d'Intensité (Ampère)";
-        warning.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ATTENTION : Pince Ampèremétrique !";
+        title.innerText = "Intensité (Ampère)";
+        warning.innerHTML = "<i class='fa-solid fa-bolt'></i> Avec Pince Ampermétrique";
         warning.className = "warning-box bg-danger";
-        desc.innerText = "N'enserrez qu'un seul fil (Phase) avec la pince. Si vous prenez le câble entier, le résultat sera 0.";
+        desc.innerText = "Pincez uniquement la phase.";
     } else if (currentMeasure === 'resistance') {
-        title.innerText = "Mesure de Résistance (Ohm)";
+        title.innerText = "Résistance / Continuité";
         warning.innerHTML = "<i class='fa-solid fa-check'></i> IMPORTANT : HORS TENSION !";
         warning.className = "warning-box bg-safe";
-        desc.innerText = "Coupez le courant. Isolez l'élément à tester pour ne pas mesurer le reste du circuit.";
+        desc.innerText = "Coupez le courant avant de mesurer.";
     }
 }
 
