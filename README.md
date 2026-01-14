@@ -13,6 +13,7 @@ Le système charge automatiquement les images numérotées de 1 à 6.
 * `tension`
 * `intensite`
 * `resistance`
+* `capacite`
 
 **2. Les Composants (tels qu'ils sont codés) :**
 * `prise` (Prise de courant)
