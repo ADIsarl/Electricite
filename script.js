@@ -97,7 +97,7 @@ function showSection(id) {
 // --- GUIDE MULTIMÈTRE ---
 const positions = {
     red: { 
-        tension: { top: 85, left: 70 }, 
+        tension: { top: 80, left: 35 }, 
         resistance: { top: 85, left: 30 }, 
         intensite: { top: 25, left: 25 },
         capacite: { top: 75, left: 80 } // Position approximative symbole condo
