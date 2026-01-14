@@ -1,31 +1,33 @@
 // --- VARIABLES GLOBALES ---
 let isTriphasé = false;
+let currentMeasure = null;
 
 // --- DOM ELEMENTS ---
 const uInput = document.getElementById('u-val');
 const iInput = document.getElementById('i-val');
 const rInput = document.getElementById('r-val');
 const pInput = document.getElementById('p-val');
+const cableOutput = document.getElementById('cable-result');
 const phaseToggle = document.getElementById('phase-toggle');
 
 const inputs = [uInput, iInput, rInput, pInput];
 
 // --- INIT ---
-// Gère le basculement Mono/Tri
 phaseToggle.addEventListener('change', () => {
     isTriphasé = phaseToggle.checked;
+    // Remet U par défaut si vide ou standard
     if (!uInput.value || uInput.value == 230 || uInput.value == 400) {
         uInput.value = isTriphasé ? 400 : 230;
     }
-    // On relance le calcul basé sur U et I si présents
-    if (uInput.value && iInput.value) calculate('u-val');
+    // Relance le calcul si possible
+    if (iInput.value) calculate('i-val');
+    else if (rInput.value) calculate('r-val');
 });
 
 // Valeur par défaut
 uInput.value = 230; 
 
-// --- LOGIQUE INTELLIGENTE ---
-// On écoute chaque champ pour savoir Lequel est modifié
+// --- CALCULATEUR INTELLIGENT ---
 inputs.forEach(input => {
     input.addEventListener('input', (e) => calculate(e.target.id));
 });
@@ -35,76 +37,96 @@ function calculate(sourceId) {
     let i = parseFloat(iInput.value);
     let r = parseFloat(rInput.value);
     let p = parseFloat(pInput.value);
-    const rac3 = 1.732; // Racine de 3
+    const rac3 = 1.732;
 
-    // LOGIQUE DE PRIORITÉ : On calcule selon ce que l'utilisateur modifie
+    // SCÉNARIO 1 : Entrée de RÉSISTANCE (R)
+    // Comme U est fixe, on calcule I = U / R, puis P
+    if (sourceId === 'r-val' && r && u) {
+        i = u / r;
+        iInput.value = i.toFixed(2);
+        
+        if (isTriphasé) pInput.value = (u * i * rac3).toFixed(2);
+        else pInput.value = (u * i).toFixed(2);
+    }
 
-    // CAS 1 : Tu modifies la TENSION (U) ou l'INTENSITÉ (I)
-    // -> On recalcule P et R
-    if ((sourceId === 'u-val' || sourceId === 'i-val') && u && i) {
+    // SCÉNARIO 2 : Entrée d'INTENSITÉ (I) ou TENSION (U)
+    // On calcule P et R
+    else if ((sourceId === 'i-val' || sourceId === 'u-val') && u && i) {
         if (isTriphasé) pInput.value = (u * i * rac3).toFixed(2);
         else pInput.value = (u * i).toFixed(2);
         
         rInput.value = (u / i).toFixed(2);
     }
 
-    // CAS 2 : Tu modifies la PUISSANCE (P)
-    // -> On recalcule I et R (en gardant U fixe)
-    else if (sourceId === 'p-val' && u && p) {
-        let iCalc;
-        if (isTriphasé) iCalc = p / (u * rac3);
-        else iCalc = p / u;
+    // SCÉNARIO 3 : Entrée de PUISSANCE (P)
+    // On calcule I puis R
+    else if (sourceId === 'p-val' && p && u) {
+        if (isTriphasé) i = p / (u * rac3);
+        else i = p / u;
         
-        iInput.value = iCalc.toFixed(2);
-        rInput.value = (u / iCalc).toFixed(2);
+        iInput.value = i.toFixed(2);
+        rInput.value = (u / i).toFixed(2);
     }
 
-    // CAS 3 : Tu modifies la RÉSISTANCE (R)
-    // -> On recalcule U et P (loi d'ohm simple U=RI)
-    else if (sourceId === 'r-val' && r && i) {
-        let uCalc = r * i;
-        uInput.value = uCalc.toFixed(2);
+    // Mise à jour de la section de câble si on a une Intensité (I)
+    let finalI = parseFloat(iInput.value);
+    if(finalI) updateCableSection(finalI);
+    else cableOutput.innerText = "---";
+}
 
-        if (isTriphasé) pInput.value = (uCalc * i * rac3).toFixed(2);
-        else pInput.value = (uCalc * i).toFixed(2);
-    }
+function updateCableSection(amp) {
+    let section = "---";
+    // Valeurs approximatives standards domestiques (Disjoncteur max -> Section)
+    if (amp <= 10) section = "1.5 mm²";
+    else if (amp <= 16) section = "1.5 mm² (ou 2.5)";
+    else if (amp <= 20) section = "2.5 mm²";
+    else if (amp <= 32) section = "6 mm²";
+    else if (amp <= 40) section = "10 mm²";
+    else if (amp <= 63) section = "16 mm²";
+    else section = "> 16 mm² (Étude requise)";
+
+    cableOutput.innerText = section;
 }
 
 function resetCalculator() {
     inputs.forEach(inp => inp.value = '');
     uInput.value = isTriphasé ? 400 : 230;
+    cableOutput.innerText = "---";
 }
 
-// --- NAVIGATION (Rien ne change ici) ---
+// --- NAVIGATION ---
 function showSection(id) {
-    document.getElementById('calculator').classList.remove('active-section');
-    document.getElementById('calculator').classList.add('hidden-section');
-    document.getElementById('guide').classList.remove('active-section');
-    document.getElementById('guide').classList.add('hidden-section');
-    
-    document.getElementById('btn-calc').classList.remove('active-btn');
-    document.getElementById('btn-guide').classList.remove('active-btn');
+    // Cache tout
+    document.querySelectorAll('main > section').forEach(sec => {
+        sec.classList.remove('active-section');
+        sec.classList.add('hidden-section');
+    });
+    // Reset boutons
+    document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('active-btn');
+    });
 
-    const target = document.getElementById(id);
-    target.classList.remove('hidden-section');
-    target.classList.add('active-section');
+    // Active la cible
+    document.getElementById(id).classList.remove('hidden-section');
+    document.getElementById(id).classList.add('active-section');
 
+    // Active le bouton
     if(id === 'calculator') document.getElementById('btn-calc').classList.add('active-btn');
-    else document.getElementById('btn-guide').classList.add('active-btn');
+    else if(id === 'guide') document.getElementById('btn-guide').classList.add('active-btn');
+    else if(id === 'formulas') document.getElementById('btn-form').classList.add('active-btn');
 }
 
-// --- LOGIQUE MULTIMÈTRE ---
-// Mise à jour des coordonnées pour être pile sur tes photos
+// --- MULTIMÈTRE ---
 const positions = {
     red: {
         tension: { top: 85, left: 70 },     
         resistance: { top: 85, left: 30 }, 
         intensite: { top: 25, left: 25 }   
     },
-   yellow: {
-        tension: { top: 75, left: 22 },     // V~ (en bas à gauche)
-        resistance: { top: 48, left: 12 },  // Ohm (au milieu à gauche)
-        intensite: { top: 12, left: 50 }    // A~ (tout en haut)
+    yellow: {
+        tension: { top: 75, left: 22 },     
+        resistance: { top: 48, left: 12 },  
+        intensite: { top: 12, left: 50 }   
     }
 };
 
@@ -113,34 +135,55 @@ const images = {
     yellow: 'assets/yellow_multimeter.png'
 };
 
+const explanations = {
+    tension: "La tension (Volts) est la 'pression' du courant. Elle permet de vérifier si une prise fonctionne (230V) ou si un fusible est grillé (0V aux bornes).",
+    intensite: "L'intensité (Ampères) est le débit du courant. Elle sert à vérifier la consommation d'un appareil (ex: chauffage) ou équilibrer les phases.",
+    resistance: "La résistance (Ohms) teste la continuité. Utile pour savoir si un fil est coupé, une bobine moteur est bonne, ou tester une résistance de chauffe-eau."
+};
+
 function selectMeasurement(type) {
     currentMeasure = type;
     document.getElementById('guide-display').classList.remove('hidden-section');
     document.getElementById('guide-display').classList.add('active-section');
+    
+    // Reset info panel
+    document.getElementById('measure-info').classList.add('hidden');
+    
     updateGuideContent();
     updateMultimeterView();
+}
+
+function toggleInfo() {
+    const panel = document.getElementById('measure-info');
+    panel.classList.toggle('hidden');
 }
 
 function updateGuideContent() {
     const title = document.getElementById('measure-title');
     const warning = document.getElementById('safety-warning');
     const desc = document.getElementById('measure-desc');
+    const infoText = document.getElementById('info-text');
+
+    // Texte explicatif bouton "?"
+    if (explanations[currentMeasure]) {
+        infoText.innerText = explanations[currentMeasure];
+    }
 
     if (currentMeasure === 'tension') {
         title.innerText = "Mesure de Tension (Volt)";
         warning.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ATTENTION : Mesure SOUS TENSION !";
         warning.className = "warning-box bg-danger";
-        desc.innerText = "Branchez le voltmètre en parallèle (dérivation). En Triphasé : Mesure entre phases (400V). En Mono : Entre Phase et Neutre (230V).";
+        desc.innerText = "Branchez en dérivation (parallèle). Calibre V~ (Alternatif) supérieur à 230V.";
     } else if (currentMeasure === 'intensite') {
         title.innerText = "Mesure d'Intensité (Ampère)";
-        warning.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ATTENTION : Mesure SOUS TENSION avec Pince !";
+        warning.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ATTENTION : Pince Ampèremétrique !";
         warning.className = "warning-box bg-danger";
-        desc.innerText = "Utilisez impérativement une pince ampèremétrique. N'enserrez qu'UN SEUL fil (Phase) à la fois dans la pince.";
+        desc.innerText = "N'enserrez qu'un seul fil (Phase) avec la pince. Si vous prenez le câble entier, le résultat sera 0.";
     } else if (currentMeasure === 'resistance') {
         title.innerText = "Mesure de Résistance (Ohm)";
-        warning.innerHTML = "<i class='fa-solid fa-check'></i> IMPORTANT : Mesure HORS TENSION !";
+        warning.innerHTML = "<i class='fa-solid fa-check'></i> IMPORTANT : HORS TENSION !";
         warning.className = "warning-box bg-safe";
-        desc.innerText = "Coupez le courant avant de mesurer. Débranchez le composant si possible. Branchez en parallèle sur le composant isolé.";
+        desc.innerText = "Coupez le courant. Isolez l'élément à tester pour ne pas mesurer le reste du circuit.";
     }
 }
 
