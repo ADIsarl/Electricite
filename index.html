@@ -1,88 +1,70 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistant Électrique Pro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+:root {
+    --primary: #007bff;
+    --bg: #f4f6f8;
+    --white: #ffffff;
+    --text: #333;
+    --danger: #dc3545;
+    --success: #28a745;
+    --info: #17a2b8;
+}
 
-    <header>
-        <h1><i class="fa-solid fa-bolt"></i> Assistant Élec</h1>
-        <nav>
-            <button onclick="showSection('calculator')" class="active-btn" id="btn-calc">Calculateur</button>
-            <button onclick="showSection('guide')" id="btn-guide">Guide Multimètre</button>
-        </nav>
-    </header>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
 
-    <main>
-        <section id="calculator" class="active-section">
-            <div class="toggle-container">
-                <span id="label-mono">Monophasé (230V)</span>
-                <label class="switch">
-                    <input type="checkbox" id="phase-toggle">
-                    <span class="slider round"></span>
-                </label>
-                <span id="label-tri">Triphasé (400V)</span>
-            </div>
+/* HEADER & LOGO */
+header { background-color: var(--white); width: 100%; padding: 0.5rem 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+.logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; }
+.logo { height: 40px; width: auto; } /* Taille du logo */
+h1 { margin: 0; font-size: 1.5rem; }
 
-            <div class="input-group">
-                <label><i class="fa-solid fa-plug"></i> Tension (U) - Volt</label>
-                <input type="number" id="u-val" placeholder="Tension en V">
-            </div>
+nav { display: flex; justify-content: center; flex-wrap: wrap; }
+nav button { margin: 5px; padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1rem; }
+.active-btn { border-bottom: 3px solid var(--primary); color: var(--primary); }
 
-            <div class="input-group">
-                <label><i class="fa-solid fa-battery-full"></i> Intensité (I) - Ampère</label>
-                <input type="number" id="i-val" placeholder="Intensité en A">
-            </div>
+main { width: 90%; max-width: 500px; margin-top: 20px; padding-bottom: 50px; }
 
-            <div class="input-group">
-                <label><i class="fa-solid fa-lightbulb"></i> Résistance (R) - Ohm</label>
-                <input type="number" id="r-val" placeholder="Résistance en Ω">
-            </div>
+/* CALCULATEUR & INPUTS */
+.input-group { background: var(--white); padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+.input-group label { margin-bottom: 5px; font-weight: 600; color: #555; font-size: 0.9rem; }
+.input-group input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 1.1rem; }
 
-            <div class="input-group">
-                <label><i class="fa-solid fa-fire"></i> Puissance (P) - Watt</label>
-                <input type="number" id="p-val" placeholder="Puissance en W">
-            </div>
-            
-            <button class="reset-btn" onclick="resetCalculator()">Réinitialiser</button>
-        </section>
+/* TOGGLE */
+.toggle-container { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; font-weight: bold; font-size: 0.9rem; }
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; margin: 0 10px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--primary); }
+input:checked + .slider:before { transform: translateX(22px); }
 
-        <section id="guide" class="hidden-section">
-            <h2>Que veux-tu mesurer ?</h2>
-            <div class="guide-choices">
-                <button onclick="selectMeasurement('tension')"><i class="fa-solid fa-plug"></i> Tension</button>
-                <button onclick="selectMeasurement('intensite')"><i class="fa-solid fa-bolt"></i> Intensité</button>
-                <button onclick="selectMeasurement('resistance')"><i class="fa-solid fa-omega"></i> Résistance</button>
-            </div>
+/* RESULTAT CABLE */
+.result-box { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary); }
+.result-value { font-size: 1.4rem; font-weight: bold; color: var(--primary); margin: 5px 0; }
 
-            <div id="guide-display" class="hidden-section">
-                <h3 id="measure-title"></h3>
-                <div id="safety-warning" class="warning-box"></div>
-                
-                <div class="multimeter-selector">
-                    <label>Choisir le multimètre :</label>
-                    <select id="multimeter-select" onchange="updateMultimeterView()">
-                        <option value="red">Multimètre Rouge (Rotatif)</option>
-                        <option value="yellow">Multimètre Jaune (Pince)</option>
-                    </select>
-                </div>
+/* GUIDE MULTIMETRE */
+.hidden-section { display: none; }
+.active-section { display: block; animation: fadeIn 0.4s; }
+.guide-choices { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.guide-choices button { flex: 1; padding: 12px; background: var(--white); border: 1px solid #ddd; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+.guide-choices button:hover { background: #eef; border-color: var(--primary); }
 
-                <div class="multimeter-container">
-                    <div id="selector-ring" class="ring"></div>
-                    <img id="multimeter-img" src="" alt="Multimètre">
-                </div>
+.title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.info-btn { background: none; border: none; color: var(--info); cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+.info-panel { background: #e2f6fa; padding: 10px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 15px; border: 1px solid #bee5eb; }
+.info-panel.hidden { display: none; }
 
-                <div class="instructions">
-                    <p id="measure-desc"></p>
-                </div>
-            </div>
-        </section>
-    </main>
+.warning-box { padding: 12px; margin: 10px 0; border-radius: 5px; font-weight: bold; text-align: center; font-size: 0.9rem; }
+.bg-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.bg-safe { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
-    <script src="script.js"></script>
-</body>
-</html>
+/* IMAGE MULTIMETRE */
+.multimeter-container { position: relative; width: 100%; max-width: 280px; margin: 10px auto; }
+#multimeter-img { width: 100%; display: block; border-radius: 10px; }
+.ring { position: absolute; width: 35px; height: 35px; border: 4px solid red; border-radius: 50%; box-shadow: 0 0 8px rgba(255, 0, 0, 0.9); transform: translate(-50%, -50%); display: none; pointer-events: none; transition: top 0.3s, left 0.3s; }
+
+/* FORMULES */
+.formula-card { background: var(--white); padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 5px solid #6610f2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.formula-big { font-size: 1.5rem; font-weight: bold; text-align: center; margin: 10px 0; color: #6610f2; letter-spacing: 1px; }
+
+.reset-btn { width: 100%; padding: 12px; background-color: #6c757d; color: white; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; font-size: 1rem; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
