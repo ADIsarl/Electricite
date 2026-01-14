@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Électrique Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header>
+        <h1><i class="fa-solid fa-bolt"></i> Assistant Élec</h1>
+        <nav>
+            <button onclick="showSection('calculator')" class="active-btn" id="btn-calc">Calculateur</button>
+            <button onclick="showSection('guide')" id="btn-guide">Guide Multimètre</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="calculator" class="active-section">
+            <div class="toggle-container">
+                <span id="label-mono">Monophasé (230V)</span>
+                <label class="switch">
+                    <input type="checkbox" id="phase-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <span id="label-tri">Triphasé (400V)</span>
+            </div>
+
+            <div class="input-group">
+                <label><i class="fa-solid fa-plug"></i> Tension (U) - Volt</label>
+                <input type="number" id="u-val" placeholder="Tension en V">
+            </div>
+
+            <div class="input-group">
+                <label><i class="fa-solid fa-battery-full"></i> Intensité (I) - Ampère</label>
+                <input type="number" id="i-val" placeholder="Intensité en A">
+            </div>
+
+            <div class="input-group">
+                <label><i class="fa-solid fa-lightbulb"></i> Résistance (R) - Ohm</label>
+                <input type="number" id="r-val" placeholder="Résistance en Ω">
+            </div>
+
+            <div class="input-group">
+                <label><i class="fa-solid fa-fire"></i> Puissance (P) - Watt</label>
+                <input type="number" id="p-val" placeholder="Puissance en W">
+            </div>
+            
+            <button class="reset-btn" onclick="resetCalculator()">Réinitialiser</button>
+        </section>
+
+        <section id="guide" class="hidden-section">
+            <h2>Que veux-tu mesurer ?</h2>
+            <div class="guide-choices">
+                <button onclick="selectMeasurement('tension')"><i class="fa-solid fa-plug"></i> Tension</button>
+                <button onclick="selectMeasurement('intensite')"><i class="fa-solid fa-bolt"></i> Intensité</button>
+                <button onclick="selectMeasurement('resistance')"><i class="fa-solid fa-omega"></i> Résistance</button>
+            </div>
+
+            <div id="guide-display" class="hidden-section">
+                <h3 id="measure-title"></h3>
+                <div id="safety-warning" class="warning-box"></div>
+                
+                <div class="multimeter-selector">
+                    <label>Choisir le multimètre :</label>
+                    <select id="multimeter-select" onchange="updateMultimeterView()">
+                        <option value="red">Multimètre Rouge (Rotatif)</option>
+                        <option value="yellow">Multimètre Jaune (Pince)</option>
+                    </select>
+                </div>
+
+                <div class="multimeter-container">
+                    <div id="selector-ring" class="ring"></div>
+                    <img id="multimeter-img" src="" alt="Multimètre">
+                </div>
+
+                <div class="instructions">
+                    <p id="measure-desc"></p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
